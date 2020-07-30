@@ -19,5 +19,5 @@ public @interface Job {
 
     int shardingItemParameters() default 1;
 
-    String getCommandLine() default "java -version";
+    String commandLine() default "java -version";
 }

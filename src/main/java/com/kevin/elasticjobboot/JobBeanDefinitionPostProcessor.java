@@ -30,7 +30,7 @@ import java.util.Map;
 @Slf4j
 public class JobBeanDefinitionPostProcessor implements BeanDefinitionRegistryPostProcessor {
 
-    private final static String SPRING_JOB_SCHEDULER = "springJobScheduler";
+
 
     private final String[] basePackages;
 
@@ -40,42 +40,9 @@ public class JobBeanDefinitionPostProcessor implements BeanDefinitionRegistryPos
 
     @Override
     public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry beanDefinitionRegistry) throws BeansException {
-        ClassPathBeanDefinitionScanner beanDefinitionScanner = new ClassPathBeanDefinitionScanner(beanDefinitionRegistry, false);
+        JobBeanDefinitionScanner beanDefinitionScanner = new JobBeanDefinitionScanner(beanDefinitionRegistry);
         beanDefinitionScanner.addIncludeFilter(new AssignableTypeFilter(ElasticJob.class));
         beanDefinitionScanner.scan(basePackages);
-        if (beanDefinitionRegistry instanceof DefaultListableBeanFactory) {
-            ConfigurableListableBeanFactory beanFactory = (ConfigurableListableBeanFactory) beanDefinitionRegistry;
-            final Map<String, ElasticJob> beansOfType = beanFactory.getBeansOfType(ElasticJob.class);
-            beansOfType.forEach((k, v) -> {
-                if (!v.getClass().isAnnotationPresent(Job.class)) {
-                    throw new RuntimeException(k + "is not annotation  by Job");
-                }
-                final Job job = v.getClass().getAnnotation(Job.class);
-                JobCoreConfiguration coreConfiguration = JobCoreConfiguration.newBuilder(job.jobName(), job.corn(), job.shardingItemParameters()).build();
-                JobTypeConfiguration jobTypeConfiguration;
-                //TODO@kevin 🚀 🚀 🚀 工厂模式
-                if (v instanceof SimpleJob) {
-                    jobTypeConfiguration = new SimpleJobConfiguration(coreConfiguration, v.getClass().getCanonicalName());
-                } else if (v instanceof DataflowJob) {
-                    jobTypeConfiguration = new DataflowJobConfiguration(coreConfiguration, v.getClass().getCanonicalName(), true);
-                } else {
-                    jobTypeConfiguration = new ScriptJobConfiguration(coreConfiguration, job.getCommandLine());
-                }
-                final LiteJobConfiguration liteJobConfiguration = LiteJobConfiguration.newBuilder(jobTypeConfiguration).overwrite(true).build();
-                BeanDefinitionBuilder springJobScheduler = BeanDefinitionBuilder.rootBeanDefinition(SpringJobScheduler.class);
-                springJobScheduler.addConstructorArgValue(v);
-                //RuntimeBeanReference Spring Bean的预加载
-                springJobScheduler.addConstructorArgValue(new RuntimeBeanReference(ZookeeperRegistryCenter.class));
-                springJobScheduler.addConstructorArgValue(liteJobConfiguration);
-                springJobScheduler.addConstructorArgValue(new ArrayList<>());
-                springJobScheduler.setInitMethodName("init");
-                BeanDefinitionHolder holder = new BeanDefinitionHolder(springJobScheduler.getBeanDefinition(), k + SPRING_JOB_SCHEDULER);
-                BeanDefinitionReaderUtils.registerBeanDefinition(holder, beanDefinitionRegistry);
-                log.info("{} register to spring success", k);
-            });
-        } else {
-            throw new RuntimeException("please user DefaultListableBeanFactory to start the spring container");
-        }
     }
 
     @Override
