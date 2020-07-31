@@ -1,36 +1,26 @@
-# elasticjob-spring-boot-starter
+### step
+#### 1.add the EnableElasticJob(basePackage) to the main method
+#### 2.add the @Job to the ElasticJob like this
+```java
+@Job(jobName = "myDataFlowJob")
+public class MyDataFlowJob implements DataflowJob<String> {
 
-#### Description
-elasticjob的SpringBoot的启动类
-
-#### Software Architecture
-Software architecture description
-
-#### Installation
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### Instructions
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### Contribution
-
-1.  Fork the repository
-2.  Create Feat_xxx branch
-3.  Commit your code
-4.  Create Pull Request
+    private static int count = 0;
 
 
-#### Gitee Feature
+    @Override
+    public List<String> fetchData(ShardingContext shardingContext) {
+        int maxSize = 10;
+        if (count < maxSize) {
+            count++;
+            return Lists.newArrayList("kevin", "love", "you");
+        }
+        return Collections.emptyList();
+    }
 
-1.  You can use Readme\_XXX.md to support different languages, such as Readme\_en.md, Readme\_zh.md
-2.  Gitee blog [blog.gitee.com](https://blog.gitee.com)
-3.  Explore open source project [https://gitee.com/explore](https://gitee.com/explore)
-4.  The most valuable open source project [GVP](https://gitee.com/gvp)
-5.  The manual of Gitee [https://gitee.com/help](https://gitee.com/help)
-6.  The most popular members  [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+    @Override
+    public void processData(ShardingContext shardingContext, List<String> list) {
+        list.forEach(System.out::println);
+    }
+}
+```
